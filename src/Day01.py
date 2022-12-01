@@ -3,6 +3,7 @@ DAY_NUM = "01"
 
 def main(data):
     # Part 1
+
     run_tots = [0]
     max_val = 0
     for val in data:
