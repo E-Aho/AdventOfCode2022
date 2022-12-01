@@ -18,8 +18,8 @@ def main(data):
     # Could do more optimally with a heap for the top N during run
     # But not at all limited by run time for this, below solution is fine
 
-    s = sorted(run_tots, reverse=True)
-    top_3 = sum(s[:3])
+    sorted_totals = sorted(run_tots, reverse=True)
+    top_3 = sum(sorted_totals[:3])
     print(f"Part 2 solution: {top_3}")
 
 
