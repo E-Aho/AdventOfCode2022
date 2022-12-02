@@ -6,6 +6,7 @@ ROCK = "rock"
 PAPER = "paper"
 SCISSOR = "scissors"
 
+
 def convert_input(input_str: str) -> str:
     mapping = {
         "A": ROCK,
@@ -16,6 +17,7 @@ def convert_input(input_str: str) -> str:
         "Z": SCISSOR,
     }
     return mapping.get(input_str)
+
 
 win_map = {
     ROCK: SCISSOR,
@@ -29,6 +31,7 @@ lose_map = {
     PAPER: SCISSOR
 }
 
+
 class StrategyGuide(ABC):
     tie_score = 3
     win_score = 6
@@ -39,6 +42,7 @@ class StrategyGuide(ABC):
         PAPER: 2,
         SCISSOR: 3
     }
+
 
 class Part1StrategyGuide(StrategyGuide):
 
@@ -56,6 +60,7 @@ class Part1StrategyGuide(StrategyGuide):
         choice_score = self.choice_score.get(yours)
         return win_score + choice_score
 
+
 class Part2StrategyGuide(StrategyGuide):
 
     def _did_win(self, yours) -> int:
@@ -68,12 +73,11 @@ class Part2StrategyGuide(StrategyGuide):
 
     def _get_choice_score(self, opponent, yours) -> int:
         choice_map = {
-            "X": lambda opp: win_map.get(opp), # they must win
+            "X": lambda opp: win_map.get(opp),  # they must win -> you lose
             "Y": lambda opp: opp,
-            "Z": lambda opp: lose_map.get(opp) # they must lose
+            "Z": lambda opp: lose_map.get(opp)  # they must lose -> you win
         }
         return self.choice_score.get(choice_map.get(yours)(opponent))
-
 
     def eval(self, opponent: str, yours: str) -> int:
         return self._get_choice_score(opponent, yours) + self._did_win(yours)
@@ -94,7 +98,6 @@ def main(data):
         opp = convert_input(opp)
         tot += part_2_strategy.eval(opp, you)
     print(f"Part 2: {tot}")
-
 
 
 if __name__ == "__main__":
