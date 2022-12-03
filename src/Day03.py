@@ -1,0 +1,15 @@
+DAY_NUM = "03"
+
+
+def main(data):
+    # Part 1
+
+    # Part 2
+    pass
+
+
+
+if __name__ == "__main__":
+    with open(f"data/Day{DAY_NUM}.txt", "r") as file:
+        data = [line.strip() for line in file.readlines()]
+    main(data)
