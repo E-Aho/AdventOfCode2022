@@ -102,5 +102,5 @@ def main(data):
 
 if __name__ == "__main__":
     with open(f"data/Day{DAY_NUM}.txt", "r") as file:
-        stipped_data = [line.strip().split() for line in file.readlines()]
-    main(stipped_data)
+        cleaned_data = [line.strip().split() for line in file.readlines()]
+    main(cleaned_data)
