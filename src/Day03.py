@@ -1,15 +1,17 @@
 DAY_NUM = "03"
 
+
 def get_priority(char: str):
     if char.isupper():
-        return ord(char) - 64 + 26   # ASCII code, A starts at 65
-    return ord(char) - 96      # ASCII code, a starts at 97
+        return 26 + ord(char) - 64  # ASCII code, A starts at 65
+    return ord(char) - 96           # ASCII code, a starts at 97
+
 
 def main(data):
     # Part 1
     running_tot = 0
     for rucksack in data:
-        comp_1, comp_2 = rucksack[:len(rucksack)//2], rucksack[len(rucksack)//2:]
+        comp_1, comp_2 = rucksack[:len(rucksack) // 2], rucksack[len(rucksack) // 2:]
         shared_item = set(comp_1).intersection(set(comp_2)).pop()
         running_tot += get_priority(shared_item)
 
@@ -38,5 +40,5 @@ def main(data):
 
 if __name__ == "__main__":
     with open(f"data/Day{DAY_NUM}.txt", "r") as file:
-        data = [line.strip() for line in file.readlines()]
-    main(data)
+        stipped_data = [line.strip() for line in file.readlines()]
+    main(stipped_data)
