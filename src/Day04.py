@@ -2,8 +2,8 @@ DAY_NUM = "04"
 
 
 def main(data):
-    part_1_count = 0
-    part_2_count = 0
+    subset_count = 0
+    intersect_count = 0
     for row in data:
 
         elf_1, elf_2 = (
@@ -16,14 +16,14 @@ def main(data):
 
         # Part 1
         if vals_1.issubset(vals_2) or vals_2.issubset(vals_1):
-            part_1_count += 1
+            subset_count += 1
 
+        # Part 2
         if len(vals_1.intersection(vals_2)) > 0:
-            part_2_count += 1
+            intersect_count += 1
 
-
-    print(f"Part 1: {part_1_count}")
-    print(f"Part 2: {part_2_count}")
+    print(f"Part 1: {subset_count}")
+    print(f"Part 2: {intersect_count}")
 
 
 if __name__ == "__main__":
