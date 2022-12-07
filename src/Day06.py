@@ -6,7 +6,7 @@ def main(data):
         # could optimize this for sure, but it works fine for this scale
         # if we're looking at significantly larger sequences,
         # would need to adjust strategy
-        # e.g using a deque
+        # e.g. using a deque
 
         for i in range(len(data)):
             packet = data[i: i + seq_len]
