@@ -131,6 +131,7 @@ def solve_p2(root: Dir, space_needed: int=None):
         current_best = new_val
     return current_best
 
+
 def main(data):
     tree = parse_tree(data)
     print(tree.get_size())
