@@ -7,29 +7,34 @@ def is_visible_in_direction(h: int, trees_in_direction: list[int]) -> bool:
     return h > max(trees_in_direction)
 
 
+def get_score(h: int, directions: list[list[int]]):
+    # Possibly a way to optimise this by caching already seen increasing sequences
+    # However, even as is, main input runs in less than half a second, so is optimised enough for this use case
+    def visible_in_direction(trees: list[int]):
+        if len(trees) <= 1:    # shortcut in case near edges
+            return len(trees)
+        v = 1
+        while v < len(trees):   # iterate across until we see a tree that blocks us
+            if trees[v-1] < h:
+                v += 1
+            else:
+                return v
+        return v
+
+    return np.prod([visible_in_direction(trees) for trees in directions])
+
+
 def main(data):
     forest = np.array(data)
     n = len(data)
     visible_count = 4*(n-1)
     best_score = 0
 
-    def get_score(h: int, directions: list[list[int]]):
-        def visible_in_direction(trees: list[int]):
-            if len(trees) <= 1:    # shortcut in case near edges
-                return len(trees)
-            v = 1
-            while v < len(trees):   # iterate across until we see a tree that blocks us
-                if trees[v-1] < h:
-                    v += 1
-                else:
-                    return v
-            return v
-
-        return np.prod([visible_in_direction(trees) for trees in directions])
-
     # check right from left, up from down, etc
     for i in range(1, n-1):
         for j in range(1, n-1):
+
+            # Part 1
             h = forest[i][j]
             if (
                 is_visible_in_direction(h, forest[i, :j]) or    # down
@@ -39,7 +44,7 @@ def main(data):
             ):
                 visible_count += 1
 
-            # for part 2: get visibility in each direction
+            # Part 2: get visibility in each direction
             # need to flip two directions to make the orders right (n=0 is adjacent to our tree)
             score = get_score(h, [
                 np.flip(forest[i, :j]),
