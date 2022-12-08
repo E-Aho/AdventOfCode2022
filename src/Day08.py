@@ -30,7 +30,6 @@ def main(data):
     visible_count = 4*(n-1)
     best_score = 0
 
-    # check right from left, up from down, etc
     for i in range(1, n-1):
         for j in range(1, n-1):
 
