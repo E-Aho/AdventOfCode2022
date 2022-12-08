@@ -1,18 +1,22 @@
+import abc
 import math
+from abc import ABC
 from typing import Optional
 
 DAY_NUM = "07"
 
 
-class Node:
+class Node(ABC):
     def __init__(self, name: str, parent):
         self.name = name
         self.children = dict()
         self.parent = parent
 
+    @abc.abstractmethod
     def get_size(self):
         pass
 
+    @abc.abstractmethod
     def get_name(self):
         pass
 
