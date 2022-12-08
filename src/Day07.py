@@ -65,7 +65,6 @@ class Root(Dir):
 
 def parse_tree(rows):
     root_dir = Root()
-    dir_map = {}
     current_dir = root_dir
 
     def cd(dir: str, current=current_dir):
@@ -80,7 +79,6 @@ def parse_tree(rows):
             val, name = row.split(" ")
             if val == "dir":
                 new_dir = Dir(name=name, parent=current)
-                dir_map[new_dir.get_name()] = new_dir
                 current.children[name] = new_dir
             else:  # It's a file
                 current.children[name] = File(name, parent=current, size=int(val))
