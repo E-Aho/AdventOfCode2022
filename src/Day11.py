@@ -45,6 +45,10 @@ class Monkey:
             if max_factor is None:
                 worry = self.op(item) // 3
             else:
+                # We don't care about the whole number, just the remainder
+
+                # Therefore, we only need to track the worry, modulo the product of
+                # all (unique) division checks.
                 worry = self.op(item) % max_factor
             if self.test(worry):
                 true_out.append(worry)
