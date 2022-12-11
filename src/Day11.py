@@ -25,7 +25,6 @@ def parse_op(line: str):
         raise Exception(f"Op fallthrough for {line}")
 
 
-
 class Monkey:
     def __init__(self, lines: list):
         self.id = int(lines[0].split()[-1].replace(":", ""))
@@ -69,6 +68,7 @@ def get_monkeys(data: list[str]) -> list[Monkey]:
     monkeys.append(Monkey(running_rows))
     return monkeys
 
+
 def operate(monkeys: list[Monkey], i: int, total_factor: int = None):
     monkey_i = monkeys[i]
     trues, falses = monkey_i.do_inspections(total_factor)
@@ -79,6 +79,7 @@ def operate(monkeys: list[Monkey], i: int, total_factor: int = None):
 def complete_round(monkeys: list[Monkey], total_factor: int = None):
     for i in range(len(monkeys)):
         operate(monkeys, i, total_factor)
+
 
 def main(data):
     monkeys = get_monkeys(data)
