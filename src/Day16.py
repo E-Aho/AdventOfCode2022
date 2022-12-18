@@ -88,8 +88,8 @@ def complete_paths(valves: list[Valve], total_time, stopping=False):
         if stopping:
             all_paths.append(path)
         new_paths = []
-        all_next_valves = [i for i, f in enumerate(flows) if
-                           (i not in path.visited) and (f != 0)]
+        all_next_valves = [
+            i for i, f in enumerate(flows) if (i not in path.visited) and (f != 0)]
         valve_times = [distance_array[path.visited[-1]][v] + 1 for v in all_next_valves]
         for time, valve in zip(valve_times, all_next_valves):
             if path.time - time <= 0:
