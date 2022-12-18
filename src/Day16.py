@@ -2,9 +2,10 @@ import numpy as np
 import re
 from itertools import permutations
 
-
 DAY_NUM = 16
 STARTING_VALVE = "AA"
+
+"""Had to use some help from Reddit for this. This was a rough one"""
 
 
 class Valve:
@@ -40,7 +41,7 @@ def get_adjacency_array(nodes: list[Valve]) -> np.ndarray:
 
 def get_distance_array(adjacency: np.ndarray) -> np.ndarray:
     """Takes in adjacency matrix, returns integer time distances to different valves"""
-    large_n = 10**4
+    large_n = 10 ** 4
 
     length = adjacency.shape[0]
     distances = np.where(adjacency, adjacency, large_n)
@@ -84,7 +85,8 @@ def complete_paths(valves: list[Valve], total_time, stopping=False):
     all_paths = []
     while stack:
         path = stack.pop(0)
-        if stopping: all_paths.append(path)
+        if stopping:
+            all_paths.append(path)
         new_paths = []
         all_next_valves = [i for i, f in enumerate(flows) if
                            (i not in path.visited) and (f != 0)]
@@ -106,11 +108,15 @@ def complete_paths(valves: list[Valve], total_time, stopping=False):
 
 
 def max_pressure_dual_paths(paths):
+    """Basically, solves by taking the two best pressures by comparing visited paths
+    of all the top performing paths, and finds the best summed results after removing
+    duplicate valves visited in both"""
     ranked_paths = sorted(paths, key=lambda x: x.pressure, reverse=True)
     max_p = 0
     j = 0
     for i, a in enumerate(ranked_paths):
-        if i > j: continue
+        if i > j:
+            continue
         x = set(tuple(a.visited[1:]))
         for j, b in enumerate(ranked_paths[i + 1:], i):
             if a.pressure + b.pressure <= max_p:
