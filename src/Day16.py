@@ -1,100 +1,140 @@
-DAY_NUM = "16"
+import numpy as np
 import re
+from itertools import permutations
+
+
+DAY_NUM = 16
+STARTING_VALVE = "AA"
 
 
 class Valve:
-    def __init__(self, name: str, flow_rate: int = None, connected_to: set[str] = None):
+    def __init__(self, name: str, flow: int, connections: set[str]):
         self.name = name
-        self.flow_rate = flow_rate
-        self.dist_map = {a: 1 for a in connected_to}
-
-    def __repr__(self):
-        return f"Node {self.name}: {self.flow_rate}, {self.dist_map.keys()}"
+        self.connections = connections
+        self.flow = flow
 
 
-def get_nodes(data):
-    valves = {}
-    starting_node = "AA"
+def parse_data(data):
+    valves = []
     for row in data:
         start, flow_rate, to = re.match(
             "Valve (\w{2}) has flow rate=(\d*); tunnel.*valve[s]*([\w+, ]*[\w+])",
             row).groups()
-        # (start, int(flow_rate), to.replace(" ", "").split(",")))
-        valves[start] = Valve(start,
-                              int(flow_rate),
-                              set(to.replace(" ", "").split(","))
-                              )
-    return {name: valve for name, valve in valves.items() if valve.flow_rate or
-            name == starting_node}
+        valves.append(Valve(
+            start,
+            int(flow_rate),
+            set(to.replace(" ", "").split(","))
+        ))
+    return valves
 
 
-def parse_map(nodes: list[Valve]):
-    """For nodes with flow rates: We want to return distances to other nodes with
-    flow rates. We can then delete all nodes with no flow rates. Must still preserve
-    connectivity though"""
-    for node_a in nodes:
-        for node_b in nodes:
-            if node_a != node_b and node_a.name in node_b.dist_map:
-                distance = node_b.dist_map[node_a.name]
-                for adjacent_node in node_a.dist_map:
-                    if adjacent_node == node_b.name:
-                        continue
-                    if adjacent_node not in node_b.dist_map:
-                        node_b.dist_map[adjacent_node] = distance + node_a.dist_map[adjacent_node]
-                    else:
-                        node_b.dist_map[adjacent_node] = min(
-                            node_b.dist_map[adjacent_node],
-                            distance + node_a.dist_map[adjacent_node]
-                        )
-    for node in nodes:
-        if not node.flow_rate:
-            for n in nodes:
-                if node.name in n.dist_map:
-                    del n.dist_map[node.name]
-
-    return {node.name: node for node in nodes if node.flow_rate or
-            node.name == "AA"}
+def get_adjacency_array(nodes: list[Valve]) -> np.ndarray:
+    """Takes in a list of valves"""
+    index_mapping = {n.name: i for i, n in enumerate(nodes)}
+    adjacency = np.zeros((len(nodes), len(nodes)), dtype=int)
+    for n in nodes:
+        for t in n.connections:
+            adjacency[index_mapping[n.name], index_mapping[t]] = 1
+    return adjacency
 
 
-def traverse_map(
-        node_map: dict[str, Valve],
-        current_node: str,
-        visited: list[str] = None,
-        time: int = 0,
-        max_time: int = 30
-) -> tuple[int, list[str]]:
-    if not visited:
-        visited = []
+def get_distance_array(adjacency: np.ndarray) -> np.ndarray:
+    """Takes in adjacency matrix, returns integer time distances to different valves"""
+    large_n = 10**4
 
-    if time >= max_time:
-        return 0, visited
+    length = adjacency.shape[0]
+    distances = np.where(adjacency, adjacency, large_n)
+    d = np.diag([1] * length, 0)
+    distances = np.where(d, 0, distances)
 
-    print(current_node)
-    node = node_map[current_node]
-    score = node.flow_rate * (max_time - time)
-    new_visited = visited.append(current_node)
-
-    child_scores = max([
-        traverse_map(
-            node_map,
-            adj,
-            new_visited,
-            time + node.dist_map[adj] + 1,
-            max_time
-        ) for adj in node.dist_map if adj not in visited
-    ])
-
-    return score + child_scores[0], [current_node] + child_scores[1]
+    for i, row in enumerate(distances):
+        neighbours = np.where(row != large_n)[0]
+        for n1, n2 in permutations(neighbours, 2):
+            d = min(row[n1] + row[n2], distances[n1, n2])
+            distances[n1, n2] = d
+            distances[n2, n1] = d
+    return distances.astype(int)
 
 
-def main(data):
-    nodes = get_nodes(data).values()
-    mapped_nodes = parse_map(nodes)
-    score, _ = traverse_map(node_map=mapped_nodes, current_node="AA")
-    print(f"Part 1: {score}")
+class Path:
+
+    def __init__(self,
+                 time: int,
+                 initial_valve: int) -> None:
+        self.time = time
+        self.visited = [initial_valve]
+        self.pressure = 0
+
+    def copy(self):
+        new_path = Path(time=self.time,
+                        initial_valve=self.visited[0])
+        new_path.visited = self.visited.copy()
+        new_path.pressure = self.pressure
+        return new_path
+
+
+def complete_paths(valves: list[Valve], total_time, stopping=False):
+    adjacency_array = get_adjacency_array(valves)
+    distance_array = get_distance_array(adjacency_array)
+    flows = np.array([v.flow for v in valves])
+    valve_index = [i for i, v in enumerate(valves) if v.name == STARTING_VALVE][0]
+
+    path = Path(total_time, valve_index)
+    stack = [path]
+    all_paths = []
+    while stack:
+        path = stack.pop(0)
+        if stopping: all_paths.append(path)
+        new_paths = []
+        all_next_valves = [i for i, f in enumerate(flows) if
+                           (i not in path.visited) and (f != 0)]
+        valve_times = [distance_array[path.visited[-1]][v] + 1 for v in all_next_valves]
+        for time, valve in zip(valve_times, all_next_valves):
+            if path.time - time <= 0:
+                continue
+            extended_path = path.copy()
+            extended_path.time -= time
+            extended_path.visited.append(valve)
+            extended_path.pressure += (path.time - time) * flows[valve]
+            new_paths.append(extended_path)
+        if new_paths:
+            stack.extend(new_paths)
+        else:
+            if not stopping:
+                all_paths.append(path)
+    return all_paths
+
+
+def max_pressure_dual_paths(paths):
+    ranked_paths = sorted(paths, key=lambda x: x.pressure, reverse=True)
+    max_p = 0
+    j = 0
+    for i, a in enumerate(ranked_paths):
+        if i > j: continue
+        x = set(tuple(a.visited[1:]))
+        for j, b in enumerate(ranked_paths[i + 1:], i):
+            if a.pressure + b.pressure <= max_p:
+                break
+            y = set(tuple(b.visited[1:]))
+            if len(set.intersection(x, y)) == 0:
+                if a.pressure + b.pressure > max_p:
+                    max_p = a.pressure + b.pressure
+    return max_p
+
+
+def main(data: str):
+    valves = parse_data(data)
+
+    paths = complete_paths(valves, 30)
+    p1 = max([p.pressure for p in paths])
+    print(f"Part 1: {p1}")
+
+    p2_paths = complete_paths(valves, 26, stopping=True)
+    p2 = max_pressure_dual_paths(p2_paths)
+    print(f"Part 2: {p2}")
 
 
 if __name__ == "__main__":
     with open(f"data/Day{DAY_NUM}.txt", "r") as file:
-        cleaned_data = [line.strip().replace("\n", "") for line in file.readlines()]
+        cleaned_data = [line.strip() for line in file.readlines()]
     main(cleaned_data)
