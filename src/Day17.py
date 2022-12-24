@@ -1,123 +1,40 @@
 from collections import deque
 
-import numpy as np
-
 DAY_NUM = "17"
 
 
 class Rock:
     types = ["-", "+", "angle", "|", "square"]
 
+    # x+ is real+, y+ is j+
+
     def __init__(self, pattern: str):
         self.rock = None
+        self.height = 0
+
         if pattern == "-":
-            self.rock = np.ones([4, 1])
+            self.rock = (0, 1, 2, 3)
+            self.height = 0
+
         elif pattern == "|":
-            self.rock = np.ones([1, 4])
+            self.rock = (0, 0 + 1j, 0 + 2j, 0 + 3j)
+            self.height = 3
+
         elif pattern == "+":
-            self.rock = np.zeros([3, 3])
-            self.rock[1, :] = 1
-            self.rock[:, 1] = 1
+            self.rock = (1, 0 + 1j, 1 + 1j, 2 + 1j, 1 + 2j)
+            self.height = 2
+
         elif pattern == "angle":
-            self.rock = np.zeros([3, 3])
-            self.rock[2, :] = 1
-            self.rock[:, 2] = 1
+            self.rock = (0, 1, 2, 2 + 1j, 2 + 2j)
+            self.height = 2
+
         elif pattern == "square":
-            self.rock = np.ones([2, 2])
+            self.rock = (0, 0 + 1j, 1, 1 + 1j)
+            self.height = 1
+
         else:
             print(f"BAD PATTERN: {pattern}")
             return
-        self.rock = self.rock.astype(int)
-
-    def dim(self):
-        return self.rock.shape
-
-
-class Chamber:
-    def __init__(self, jet_pattern: str):
-        self._chamber_height = 10**5
-        self._chamber_width = 7
-        self.spawn_dist = 3
-
-        self.chamber = np.zeros(shape=(self._chamber_width, self._chamber_height))
-        self.top_height = 0
-        self.jet_pattern = jet_pattern
-        self.jets = None
-
-    def next_jet(self):
-        if not self.jets:
-            self.jets = deque(self.jet_pattern)
-        return self.jets.popleft()
-
-    def get_spawn_height(self, rock_height: int = 1):
-        return self._chamber_height - (self.top_height + rock_height + self.spawn_dist)
-
-    def add_rock(self, coordinate: tuple, rock: Rock):
-        top_of_new_rock = self._chamber_height - (coordinate[1])
-        self.chamber[
-            coordinate[0]: coordinate[0] + rock.dim()[0],
-            coordinate[1]: coordinate[1] + rock.dim()[1]
-        ] = rock.rock
-        self.top_height = max(self.top_height, top_of_new_rock)
-
-
-    def drop_rock(self, rock: Rock):
-        coordinate = self.spawn_point(rock_height=rock.dim()[1])
-
-        while True:
-            # perform jet move
-            jet_move = -1 if self.next_jet() == "<" else 1
-            next_coordinate = (coordinate[0] + jet_move, coordinate[1])
-            # print("Push", coordinate, next_coordinate)
-
-            if self.check_coordinate_valid(next_coordinate, rock):
-                coordinate = next_coordinate
-
-            # perform drop
-            next_coordinate = (coordinate[0], coordinate[1] + 1)
-            # print("Drop", coordinate, next_coordinate)
-
-            if self.check_coordinate_valid(next_coordinate, rock):
-                coordinate = next_coordinate
-            else:
-                self.add_rock(coordinate, rock)
-                # self.print()
-                return
-
-    def check_coordinate_valid(self, coordinate: tuple, rock: Rock):
-        x = coordinate[0] + rock.dim()[0]
-        y = coordinate[1] - rock.dim()[1] + 1
-        if coordinate[0] < 0:
-            return False
-        
-        if x <= self._chamber_width and y < self._chamber_height:
-            target = self.chamber[
-                coordinate[0]: coordinate[0] + rock.dim()[0],
-                coordinate[1]: coordinate[1] + rock.dim()[1]
-             ]
-            overlap = np.any(
-                target + rock.rock >= 2
-            )
-            return not overlap
-        return False
-
-
-    def spawn_point(self, rock_height: int = 1):
-        return 2, self.get_spawn_height(rock_height)
-
-    def print(self):
-        val_to_str_map = {
-            0: ".",
-            1: "@"
-        }
-
-        out_str = ""
-        for r in range(self.get_spawn_height(), self._chamber_height):
-            present_rocks = list(self.chamber[:, r])
-            s = "".join([val_to_str_map.get(x) for x in present_rocks])
-            out_str += s
-            out_str += "\n"
-        # print(out_str)
 
 
 rocks = [
@@ -125,12 +42,110 @@ rocks = [
 ]
 
 
+class Chamber:
+    def __init__(self, jet_pattern: str):
+        self._chamber_width = 7
+        self.spawn_dist = 3
+
+        self.chamber = set()
+        self.cache = {}
+        self.jet_pattern = jet_pattern
+        self.top_height = 0
+
+        self.jets_index = 0
+        self.rock_index = 0
+
+    def get_spawn_height(self):
+        return complex(2, self.top_height + 4)
+
+    def check_valid(self, coordinate: complex) -> bool:
+        return (0 <= coordinate.real < 7
+                and coordinate.imag > 0
+                and coordinate not in self.chamber)
+
+    def check_rock_valid(
+            self,
+            coordinate: complex,
+            direction: complex,
+            rock: Rock
+    ) -> bool:
+        return all(self.check_valid(
+            coordinate + direction + r
+        ) for r in rock.rock)
+
+    def print(self, height: int = 10):
+        """Prints the chamber up to a given height"""
+        val_to_str_map = {
+            False: ".",
+            True: "@"
+        }
+        out_str = ""
+        for h in range(height, 0, -1):
+            row = []
+            for x in range(7):
+                row.append(complex(x, h) in self.chamber)
+            s = "".join([val_to_str_map.get(x) for x in row])
+            out_str += s
+            out_str += "\n"
+        print(out_str)
+
+    def reset(self):
+        self.chamber = set()
+        self.cache = {}
+        self.top_height = 0
+
+        self.jets_index = 0
+        self.rock_index = 0
+
+    def get_jet(self):
+        jet = self.jet_pattern[self.jets_index]
+        self.jets_index = (self.jets_index + 1) % len(self.jet_pattern)
+        if jet == "<":
+            return -1
+        else:
+            return 1
+
+    def drop_rock(self, position: complex):
+        rock = rocks[self.rock_index]
+        self.rock_index = (self.rock_index + 1) % len(rocks)
+        while True:
+            jet = self.get_jet()
+
+            if self.check_rock_valid(position, jet, rock):  # push via jet rock
+                position += jet
+            if self.check_rock_valid(position, -1j, rock):  # move rock down if it can
+                position += -1j
+            else:  # rock can't move down, finish moving
+                self.chamber.update({position + r for r in rock.rock})
+                self.top_height = max(self.top_height, int(position.imag + rock.height))
+                return
+
+    def drop_n_rocks(self, count: int) -> int:
+        for step in range(count):
+            pos = complex(2, self.top_height + 4)
+
+            hash_key = self.rock_index, self.jets_index
+            if hash_key in self.cache:
+                # Turns out just using rock and jet indexes is enough! No need for
+                # caching chamber status
+                cached_step, cached_top = self.cache[hash_key]
+                div, mod = divmod(count - step, step - cached_step)
+                if mod == 0:
+                    self.top_height = (
+                            self.top_height + (self.top_height - cached_top) * div
+                    )
+                    return self.top_height
+            else:
+                self.cache[hash_key] = step, self.top_height
+            self.drop_rock(pos)
+        return self.top_height
+
+
 def main(data):
     chamber = Chamber(data[0])
-    for _ in range(2022):
-        rock = rocks[_ % 5]
-        chamber.drop_rock(rock)
-    print(chamber.top_height)
+    print(f"Part 1: {chamber.drop_n_rocks(2022)}")
+    chamber.reset()
+    print(f"Part 2: {chamber.drop_n_rocks(int(1e12))}")
 
 
 if __name__ == "__main__":
